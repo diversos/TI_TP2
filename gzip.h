@@ -1,5 +1,5 @@
 /* Author: Rui Pedro Paiva
-Teoria da InformaÃ§Ã£o, LEI, 2007/2008*/
+Teoria da Informação, LEI, 2007/2008*/
 
 #include <stdio.h>
 
