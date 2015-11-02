@@ -7,11 +7,14 @@ Teoria da Informação, LEI, 2007/2008*/
 #define n_HLIT 1
 #define n_HDIST 2
 #define n_HCLEN 3
+#define bit_lenCode 4
 
 char availBits = 0;
 unsigned char byte;  //variável temporária para armazenar um byte lido directamente do ficheiro
 unsigned int rb = 0;  //último byte lido (poderá ter mais que 8 bits, se tiverem sobrado alguns de leituras anteriores)
 FILE *gzFile;  //ponteiro para o ficheiro a abrirs
+int order_HCLEN[19] = {16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};
+
 
 //função principal, a qual gere todo o processo de descompactação
 int main(int argc, char** argv)
@@ -89,7 +92,7 @@ int main(int argc, char** argv)
         printf("HDIST = %d\n", HDIST);
         char HCLEN = readBlockFormat(n_HCLEN);
         printf("HCLEN = %d\n", HCLEN);
-
+        LenCode_HCLEN(HCLEN);
 		//actualizar número de blocos analisados
 		numBlocks++;
 	}while(BFINAL == 0);
@@ -111,6 +114,7 @@ int main(int argc, char** argv)
     return EXIT_SUCCESS;
 }
 
+/*1ª semana  - PONTO 1*/
 char readBlockFormat(int type){
     char format, needBits, readBits;
     switch (type){
@@ -122,9 +126,13 @@ char readBlockFormat(int type){
         needBits = 5;
         readBits = 0x1F;
         break;
-     case n_HCLEN:
+    case n_HCLEN:
         needBits = 4;
         readBits = 0xF;
+        break;
+    case bit_lenCode:
+        needBits = 3;
+        readBits = 0x7;
         break;
     }
     if (availBits < needBits)
@@ -141,6 +149,20 @@ char readBlockFormat(int type){
     availBits -= needBits;
     return format;
 }
+
+/*1ª semana  - PONTO 2*/
+int *LenCode_HCLEN(char s_hclen){
+
+    int LenCode_array[19];
+    int i,position;
+    for(i=0; i < (s_hclen + 4); i++){
+        position = order_HCLEN[i];
+        LenCode_array[position] = readBlockFormat(bit_lenCode);
+        printf("%d\n",LenCode_array[position]);
+    }
+    return LenCode_array;
+}
+
 //---------------------------------------------------------------
 //Lê o cabeçalho do ficheiro gzip: devolve erro (-1) se o formato for inválidodevolve, ou 0 se ok
 int getHeader(FILE *gzFile, gzipHeader *gzh) //obtém cabeçalho
