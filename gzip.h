@@ -31,3 +31,4 @@ int getHeader(FILE *gzFile, gzipHeader *gzh);
 int isDynamicHuffman(unsigned char rb);
 void bits2String(char *strBits, unsigned char byte);
 char readBlockFormat(int type);
+int *LenCode_HCLEN(char s_hclen);
