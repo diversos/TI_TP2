@@ -2,6 +2,7 @@
 Teoria da Informação, LEI, 2007/2008*/
 
 #include <cstdlib>
+#include <unistd.h>
 
 #include "gzip.h"
 #define n_HLIT 1
@@ -14,7 +15,8 @@ unsigned char byte;  //variável temporária para armazenar um byte lido directa
 unsigned int rb = 0;  //último byte lido (poderá ter mais que 8 bits, se tiverem sobrado alguns de leituras anteriores)
 FILE *gzFile;  //ponteiro para o ficheiro a abrirs
 int order_HCLEN[19] = {16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};
-
+int CodeLen_HCLEN[19];
+int used_HCLEN = 0;
 
 //função principal, a qual gere todo o processo de descompactação
 int main(int argc, char** argv)
@@ -27,15 +29,15 @@ int main(int argc, char** argv)
 	char needBits = 0;
 
 	//--- obter ficheiro a descompactar
-	char fileName[] = "FAQ.txt.gz";
+	//char fileName[] = "FAQ.txt.gz";
 
-	/*if (argc != 2)
+	if (argc != 2)
 
 	{
 		printf("Linha de comando inválida!!!");
 		return -1;
 	}
-	char * fileName = argv[1];*/
+	char * fileName = argv[1];
 
 	//--- processar ficheiro
 	gzFile = fopen(fileName, "r");
@@ -93,6 +95,7 @@ int main(int argc, char** argv)
         char HCLEN = readBlockFormat(n_HCLEN);
         printf("HCLEN = %d\n", HCLEN);
         LenCode_HCLEN(HCLEN);
+        ConverterHuffman();
 		//actualizar número de blocos analisados
 		numBlocks++;
 	}while(BFINAL == 0);
@@ -128,15 +131,14 @@ char readBlockFormat(int type){
         break;
     case n_HCLEN:
         needBits = 4;
-        readBits = 0xF;
+        readBits = 0x0F;
         break;
     case bit_lenCode:
         needBits = 3;
-        readBits = 0x7;
+        readBits = 0x07;
         break;
     }
-    if (availBits < needBits)
-    {
+    if (availBits < needBits){
         fread(&byte, 1, 1, gzFile);
         rb = (byte << availBits) | rb;
         availBits += 8;
@@ -151,16 +153,51 @@ char readBlockFormat(int type){
 }
 
 /*1ª semana  - PONTO 2*/
-int *LenCode_HCLEN(char s_hclen){
-
-    int LenCode_array[19];
+void LenCode_HCLEN(char s_hclen){
     int i,position;
     for(i=0; i < (s_hclen + 4); i++){
         position = order_HCLEN[i];
-        LenCode_array[position] = readBlockFormat(bit_lenCode);
-        printf("%d\n",LenCode_array[position]);
+        CodeLen_HCLEN[position] = readBlockFormat(bit_lenCode);
+        used_HCLEN++;
     }
-    return LenCode_array;
+}
+
+
+void ConverterHuffman(){
+	int x, max_bits=0, code = 0, aux;
+	// determinar o comprimento máximo
+	for(x=0; x<used_HCLEN; x++){
+		if(CodeLen_HCLEN[x] > max_bits)
+			max_bits = CodeLen_HCLEN[x];
+	}
+
+	int ocorrencias[max_bits+1];
+	int next_code[max_bits+1];
+	
+	for(x=0; x<max_bits+1; x++)
+		ocorrencias[x] = 0;
+
+	for(x=0; x<used_HCLEN; x++)
+		ocorrencias[CodeLen_HCLEN[x]]++;
+
+	for(x=1; x<max_bits+1; x++)
+		printf("*** ocorr: %d\n", ocorrencias[x]);
+
+	// quando o comprimento é 0 não se conta 
+	ocorrencias[0]=0;
+	
+	for (int bits = 1; bits <= max_bits; bits++) {
+		code = (code + ocorrencias[bits-1]) << 1;
+		next_code[bits] = code;
+		printf("## next_code: %d\n", next_code[bits]);
+	}
+
+	for(x=0; x<used_HCLEN; x++){
+		if(ocorrencias[CodeLen_HCLEN[x]] != 0){
+			CodeLen_HCLEN[x] = next_code[CodeLen_HCLEN[x]]++;
+			printf("--- codificação: %d\n", CodeLen_HCLEN[x]);
+		}
+	}
 }
 
 //---------------------------------------------------------------
