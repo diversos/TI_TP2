@@ -26,9 +26,12 @@ typedef struct header
 	unsigned char *HCRC;
 } gzipHeader;
 
+
+
 long getOrigFileSize(FILE *gzFile);
 int getHeader(FILE *gzFile, gzipHeader *gzh);
 int isDynamicHuffman(unsigned char rb);
 void bits2String(char *strBits, unsigned char byte);
 char readBlockFormat(int type);
-int *LenCode_HCLEN(char s_hclen);
+void LenCode_HCLEN(char s_hclen);
+void ConverterHuffman();
