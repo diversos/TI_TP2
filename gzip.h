@@ -1,5 +1,5 @@
 /* Author: Rui Pedro Paiva
-Teoria da Informação, LEI, 2007/2008*/
+Teoria da InformaÃ§Ã£o, LEI, 2007/2008*/
 
 #include <stdio.h>
 
@@ -30,3 +30,4 @@ long getOrigFileSize(FILE *gzFile);
 int getHeader(FILE *gzFile, gzipHeader *gzh);
 int isDynamicHuffman(unsigned char rb);
 void bits2String(char *strBits, unsigned char byte);
+char readBlockFormat(int type);
