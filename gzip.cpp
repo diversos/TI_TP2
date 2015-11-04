@@ -3,12 +3,18 @@ Teoria da Informação, LEI, 2007/2008*/
 
 #include <cstdlib>
 #include <unistd.h>
+#include "huffman.h"
+#include <sstream>
+
+#include <cstring>
 
 #include "gzip.h"
 #define n_HLIT 1
 #define n_HDIST 2
 #define n_HCLEN 3
 #define bit_lenCode 4
+
+using namespace std;
 
 char availBits = 0;
 unsigned char byte;  //variável temporária para armazenar um byte lido directamente do ficheiro
@@ -27,17 +33,20 @@ int main(int argc, char** argv)
 	int numBlocks = 0;
 	gzipHeader gzh;
 	char needBits = 0;
+    //criar arvore
+    HuffmanTree* Huffman_tree = createHFTree();
+
 
 	//--- obter ficheiro a descompactar
-	//char fileName[] = "FAQ.txt.gz";
+	char fileName[] = "FAQ.txt.gz";
 
-	if (argc != 2)
+	/*if (argc != 2)
 
 	{
 		printf("Linha de comando inválida!!!");
 		return -1;
 	}
-	char * fileName = argv[1];
+	char * fileName = argv[1];*/
 
 	//--- processar ficheiro
 	gzFile = fopen(fileName, "r");
@@ -93,9 +102,11 @@ int main(int argc, char** argv)
         char HDIST = readBlockFormat(n_HDIST);
         printf("HDIST = %d\n", HDIST);
         char HCLEN = readBlockFormat(n_HCLEN);
+        used_HCLEN = HCLEN + 4;
         printf("HCLEN = %d\n", HCLEN);
-        LenCode_HCLEN(HCLEN);
-        ConverterHuffman();
+        LenCode_HCLEN();
+        ConverterHuffman(Huffman_tree); //devolve os códigos de huffman em string
+
 		//actualizar número de blocos analisados
 		numBlocks++;
 	}while(BFINAL == 0);
@@ -144,7 +155,7 @@ char readBlockFormat(int type){
         availBits += 8;
     }
 
-    format = rb & (1 << needBits) - 1;
+    format = rb & ((1 << needBits) - 1);
 
     rb = rb >> needBits;
 
@@ -153,49 +164,52 @@ char readBlockFormat(int type){
 }
 
 /*1ª semana  - PONTO 2*/
-void LenCode_HCLEN(char s_hclen){
+void LenCode_HCLEN(){
     int i,position;
-    for(i=0; i < (s_hclen + 4); i++){
+    for(i=0; i < used_HCLEN; i++){
         position = order_HCLEN[i];
         CodeLen_HCLEN[position] = readBlockFormat(bit_lenCode);
-        used_HCLEN++;
     }
 }
 
-
-void ConverterHuffman(){
+/*2ª semana - PONTO 3*/
+void ConverterHuffman(HuffmanTree* Huffman_tree){
 	int x, max_bits=0, code = 0, aux;
 	// determinar o comprimento máximo
-	for(x=0; x<used_HCLEN; x++){
+	for(x=0; x<19; x++){
+        printf("\n2*** %d\n",CodeLen_HCLEN[x]);
 		if(CodeLen_HCLEN[x] > max_bits)
 			max_bits = CodeLen_HCLEN[x];
 	}
-
 	int ocorrencias[max_bits+1];
 	int next_code[max_bits+1];
-	
+	int codigosHuffman[max_bits+1];
+
 	for(x=0; x<max_bits+1; x++)
 		ocorrencias[x] = 0;
 
-	for(x=0; x<used_HCLEN; x++)
+	for(x=0; x<19; x++){
 		ocorrencias[CodeLen_HCLEN[x]]++;
+	}
 
 	for(x=1; x<max_bits+1; x++)
 		printf("*** ocorr: %d\n", ocorrencias[x]);
 
-	// quando o comprimento é 0 não se conta 
+	// quando o comprimento é 0 não se conta
 	ocorrencias[0]=0;
-	
+
 	for (int bits = 1; bits <= max_bits; bits++) {
 		code = (code + ocorrencias[bits-1]) << 1;
 		next_code[bits] = code;
 		printf("## next_code: %d\n", next_code[bits]);
 	}
 
-	for(x=0; x<used_HCLEN; x++){
+	for(x=0; x<19; x++){
 		if(ocorrencias[CodeLen_HCLEN[x]] != 0){
-			CodeLen_HCLEN[x] = next_code[CodeLen_HCLEN[x]]++;
-			printf("--- codificação: %d\n", CodeLen_HCLEN[x]);
+			codigosHuffman[x] = next_code[CodeLen_HCLEN[x]]++;
+			printf("--- codificação: %d binario: ", codigosHuffman[x]);
+			addNode(Huffman_tree,int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]),x,1);
+			printf("\n");
 		}
 	}
 }
@@ -396,4 +410,35 @@ void bits2String(char *strBits, unsigned char byte)
 		strBits[i] = bit +48; //converter valor numérico para o caracter alfanumérico correspondente
 		byte = byte >> 1;
 	}
+}
+
+char *int2Binary(int number, int tamanhof){
+    string out = "";
+    string Result;
+
+    int tamanhoa = 0;
+    while (number/2 != 0){
+        ostringstream convert;
+        convert << number%2;
+
+        Result = convert.str();
+
+        out =  Result + out;
+        number = number/2;
+           tamanhoa++;
+    }
+        ostringstream convert;
+        convert << number%2;
+
+        Result = convert.str();
+
+        out =  Result + out;
+        tamanhoa++;
+    for (int i = tamanhoa; i<tamanhof; i++ ){
+        out = "0" + out;
+    }
+    char res[1024];
+    strncpy(res, out.c_str(), sizeof(res));
+    res[sizeof(res) - 1] = 0;
+    return res;
 }
