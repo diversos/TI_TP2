@@ -13,6 +13,10 @@ Teoria da Informação, LEI, 2007/2008*/
 #define n_HDIST 2
 #define n_HCLEN 3
 #define bit_lenCode 4
+#define extra_16 5
+#define extra_17 6
+#define extra_18 7
+#define need_1 8
 
 using namespace std;
 
@@ -98,6 +102,7 @@ int main(int argc, char** argv)
 		//****** ADICIONAR PROGRAMA... *********************
 		//**************************************************
         char HLIT = readBlockFormat(n_HLIT);
+        int dim_HLIT = HLIT + 257;
         printf("HLIT = %d\n", HLIT);
         char HDIST = readBlockFormat(n_HDIST);
         printf("HDIST = %d\n", HDIST);
@@ -106,6 +111,9 @@ int main(int argc, char** argv)
         printf("HCLEN = %d\n", HCLEN);
         LenCode_HCLEN();
         ConverterHuffman(Huffman_tree); //devolve os códigos de huffman em string
+
+        int *CodeLen_HLIT = new int[dim_HLIT];
+        CodeLen_HLIT = LenCode_HLIT (dim_HLIT,Huffman_tree);
 
 		//actualizar número de blocos analisados
 		numBlocks++;
@@ -148,6 +156,18 @@ char readBlockFormat(int type){
         needBits = 3;
         readBits = 0x07;
         break;
+    case extra_16:
+        needBits = 2;
+        readBits = 0x03;
+    case extra_17:
+        needBits = 3;
+        readBits = 0x07;
+    case extra_18:
+        needBits = 7;
+        readBits = 0x7F;
+    case need_1:
+        needBits = 1;
+        readBits = 0x01;
     }
     if (availBits < needBits){
         fread(&byte, 1, 1, gzFile);
@@ -174,7 +194,7 @@ void LenCode_HCLEN(){
 
 /*2ª semana - PONTO 3*/
 void ConverterHuffman(HuffmanTree* Huffman_tree){
-	int x, max_bits=0, code = 0, aux;
+	int x, max_bits=0, code = 0;
 	// determinar o comprimento máximo
 	for(x=0; x<19; x++){
         if(CodeLen_HCLEN[x] > max_bits)
@@ -206,6 +226,64 @@ void ConverterHuffman(HuffmanTree* Huffman_tree){
 		}
 	}
 }
+
+/*2ª semana - PONTO 3*/
+int codeFromTree(HuffmanTree *Huffman_tree){
+    int isNotLeaf = -2;
+    int indice = isNotLeaf;
+
+    while (indice == isNotLeaf){
+        char bit = readBlockFormat(need_1);
+        printf("\nBIT: %d\n",bit);
+        indice = nextNode(Huffman_tree,bit);
+    }
+    resetCurNode(Huffman_tree);
+    printf("%d\n", indice);
+    return indice;
+}
+
+int* LenCode_HLIT (int dim, HuffmanTree *Huffman_tree){
+    int lengths[dim];
+    printf("\ndim: %d\n",dim);
+    for(int i = 0;i<dim;){
+            printf(":: %d\t", i);
+        short indice = codeFromTree(Huffman_tree);
+        int repeat = 0;
+        if (indice <= 15){
+            lengths[i] = indice;
+            i++;
+        }
+        else{
+            switch(indice){
+            case 16:
+                repeat = readBlockFormat(extra_16) + 3;
+                for (int x = 0; x<repeat;x++){
+                    lengths[i] = lengths[i-1];
+                    i++;
+                }
+                break;
+            case 17:
+                repeat = readBlockFormat(extra_17) + 3;
+                for (int x = 0; x<repeat;x++){
+                    lengths[i++] = 0;
+                }
+                break;
+            case 18:
+                repeat = readBlockFormat(extra_18) + 11;
+                for (int x = 0; x<repeat;x++){
+                    lengths[i++] = 0;
+                }
+                break;
+            }
+        }
+    }
+    for (int x = 0; x<dim;x++){
+        if(lengths[x]!=0)
+            printf("-->%d : %d\n",x,lengths[x]);
+    }
+    return lengths;
+}
+
 
 //---------------------------------------------------------------
 //Lê o cabeçalho do ficheiro gzip: devolve erro (-1) se o formato for inválidodevolve, ou 0 se ok
