@@ -231,23 +231,21 @@ void ConverterHuffman(HuffmanTree* Huffman_tree){
 int codeFromTree(HuffmanTree *Huffman_tree){
     int isNotLeaf = -2;
     int indice = isNotLeaf;
-
+    char bit;
     while (indice == isNotLeaf){
-        char bit = readBlockFormat(need_1);
-        printf("\nBIT: %d\n",bit);
+        bit = readBlockFormat(need_1);
         indice = nextNode(Huffman_tree,bit);
+
     }
     resetCurNode(Huffman_tree);
-    printf("%d\n", indice);
     return indice;
 }
 
 int* LenCode_HLIT (int dim, HuffmanTree *Huffman_tree){
     int lengths[dim];
-    printf("\ndim: %d\n",dim);
     for(int i = 0;i<dim;){
-            printf(":: %d\t", i);
-        short indice = codeFromTree(Huffman_tree);
+        int indice = codeFromTree(Huffman_tree);
+        printf("\nindiceeee: %d",indice);
         int repeat = 0;
         if (indice <= 15){
             lengths[i] = indice;
@@ -277,10 +275,11 @@ int* LenCode_HLIT (int dim, HuffmanTree *Huffman_tree){
             }
         }
     }
-    for (int x = 0; x<dim;x++){
+
+    /*for (int x = 0; x<dim;x++){
         if(lengths[x]!=0)
             printf("-->%d : %d\n",x,lengths[x]);
-    }
+    }*/
     return lengths;
 }
 
