@@ -243,10 +243,8 @@ int indexFromTree(HuffmanTree *Huffman_tree){
     char bit;
     while (indice == isNotLeaf){
         bit = readBlockFormat(need_1);
-       // printf("\tBIT: %d", bit);
         indice = nextNode(Huffman_tree,bit);
     }
-    //printf("\n");
     resetCurNode(Huffman_tree);
     return indice;
 }
@@ -255,7 +253,6 @@ int* LenCode_HLIT (int dim, HuffmanTree *Huffman_tree){
     int lengths[dim];
     for(int i = 0;i<dim;){
         int indice = indexFromTree(Huffman_tree);
-        //printf("\nindiceeee: %d",indice);
         int repeat = 0;
         if (indice <= 15)
             lengths[i++] = indice;
