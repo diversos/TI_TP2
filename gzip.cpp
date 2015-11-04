@@ -177,8 +177,7 @@ void ConverterHuffman(HuffmanTree* Huffman_tree){
 	int x, max_bits=0, code = 0, aux;
 	// determinar o comprimento máximo
 	for(x=0; x<19; x++){
-        printf("\n2*** %d\n",CodeLen_HCLEN[x]);
-		if(CodeLen_HCLEN[x] > max_bits)
+        if(CodeLen_HCLEN[x] > max_bits)
 			max_bits = CodeLen_HCLEN[x];
 	}
 	int ocorrencias[max_bits+1];
@@ -192,24 +191,18 @@ void ConverterHuffman(HuffmanTree* Huffman_tree){
 		ocorrencias[CodeLen_HCLEN[x]]++;
 	}
 
-	for(x=1; x<max_bits+1; x++)
-		printf("*** ocorr: %d\n", ocorrencias[x]);
-
 	// quando o comprimento é 0 não se conta
 	ocorrencias[0]=0;
 
 	for (int bits = 1; bits <= max_bits; bits++) {
 		code = (code + ocorrencias[bits-1]) << 1;
 		next_code[bits] = code;
-		printf("## next_code: %d\n", next_code[bits]);
 	}
 
 	for(x=0; x<19; x++){
 		if(ocorrencias[CodeLen_HCLEN[x]] != 0){
 			codigosHuffman[x] = next_code[CodeLen_HCLEN[x]]++;
-			printf("--- codificação: %d binario: ", codigosHuffman[x]);
 			addNode(Huffman_tree,int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]),x,1);
-			printf("\n");
 		}
 	}
 }
@@ -412,33 +405,21 @@ void bits2String(char *strBits, unsigned char byte)
 	}
 }
 
-char *int2Binary(int number, int tamanhof){
+char *int2Binary(int number, int LenCode){
     string out = "";
-    string Result;
-
-    int tamanhoa = 0;
-    while (number/2 != 0){
+    int countbit = 0;
+    while (number != 0){
         ostringstream convert;
         convert << number%2;
-
-        Result = convert.str();
-
-        out =  Result + out;
+        out =  convert.str() + out;
         number = number/2;
-           tamanhoa++;
+        countbit++;
     }
-        ostringstream convert;
-        convert << number%2;
-
-        Result = convert.str();
-
-        out =  Result + out;
-        tamanhoa++;
-    for (int i = tamanhoa; i<tamanhof; i++ ){
+    for (int i = countbit; i<LenCode; i++ ){
         out = "0" + out;
     }
-    char res[1024];
-    strncpy(res, out.c_str(), sizeof(res));
-    res[sizeof(res) - 1] = 0;
+    char *res = new char[LenCode+1];
+    strncpy(res, out.c_str(), LenCode);
+    res[LenCode] = 0;
     return res;
 }
