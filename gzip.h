@@ -28,13 +28,13 @@ typedef struct header
 
 
 
-long getOrigFileSize(FILE *gzFile);
-int getHeader(FILE *gzFile, gzipHeader *gzh);
+long getOrigFileSize();
+int getHeader(gzipHeader *gzh);
 int isDynamicHuffman(unsigned char rb);
 void bits2String(char *strBits, unsigned char byte);
 char readBlockFormat(int type);
-void LenCode_HCLEN(int dim);
-void ConverterHuffman(HuffmanTree* Huffman_tree);
-char *int2Binary(int number, int lenCode);
 int indexFromTree(HuffmanTree *Huffman_tree);
-int* LenCode_HLIT (int dim, HuffmanTree *Huffman_tree);
+void LenCode_HCLEN(int dim, int *CodeLen_HCLEN);
+void ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN);
+char *int2Binary(int number, int lenCode);
+int* LenCode(int dim, HuffmanTree *Huffman_tree);
