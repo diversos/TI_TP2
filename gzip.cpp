@@ -138,6 +138,8 @@ int main(int argc, char** argv)
 	bits2String(str, 0x03);
 	printf("%s\n", str);
 
+	//RETIRAR antes de criar o executável final
+	system("PAUSE");
     return EXIT_SUCCESS;
 }
 
@@ -207,8 +209,11 @@ char readBlockFormat(int type){
 void LenCode_HCLEN(int dim, int *CodeLen_HCLEN){
 	int ordem[19] = {16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};	//ordem pela qual se lê do ficheiro
     int i;
+    for(i=0; i<19; i++)
+    	CodeLen_HCLEN[i] = 0;
+
     for(i=0; i<dim; i++){
-        (CodeLen_HCLEN[ordem[i]]) = readBlockFormat(bit_lenCode);
+        CodeLen_HCLEN[ordem[i]] = readBlockFormat(bit_lenCode);
     }
 }
 
@@ -223,8 +228,9 @@ void ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN){
 
 	// determinar o comprimento máximo
 	for(x=0; x<19; x++){
-        if((CodeLen_HCLEN[x]) > max_bits)
-			max_bits = (CodeLen_HCLEN[x]);
+        if((CodeLen_HCLEN[x]) > max_bits){
+			max_bits = CodeLen_HCLEN[x];
+		}
 	}
 
 	int ocorrencias[max_bits+1];
@@ -249,11 +255,8 @@ void ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN){
 	 * 				3				  000
 	 * 				4				 1100
 	 * 				5				11100
-	 *
-	 * Começa em 4 porque antes disso era tudo 0, apesar de com indice 3 já ter número 
-	 * de ocorrências, ele só usa o valor anterior. 
 	 */
-	for(int bits = 4; bits <= max_bits; bits++){
+	for(int bits = 1; bits <= max_bits; bits++){
 		code = (code + ocorrencias[bits-1]) << 1;
 		next_code[bits] = code;
 	}
