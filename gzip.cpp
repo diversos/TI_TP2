@@ -9,6 +9,8 @@ Teoria da Informação, LEI, 2007/2008*/
 #include <cstring>
 
 #include "gzip.h"
+
+//Para o switch
 #define n_HLIT 1
 #define n_HDIST 2
 #define n_HCLEN 3
@@ -24,8 +26,6 @@ char availBits = 0;
 unsigned char byte;  //variável temporária para armazenar um byte lido directamente do ficheiro
 unsigned int rb = 0;  //último byte lido (poderá ter mais que 8 bits, se tiverem sobrado alguns de leituras anteriores)
 FILE *gzFile;  //ponteiro para o ficheiro a abrirs
-int order_HCLEN[19] = {16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};
-int CodeLen_HCLEN[19];
 
 //função principal, a qual gere todo o processo de descompactação
 int main(int argc, char** argv)
@@ -41,15 +41,15 @@ int main(int argc, char** argv)
 
 
 	//--- obter ficheiro a descompactar
-	char fileName[] = "FAQ.txt.gz";
+	//char fileName[] = "FAQ.txt.gz";
 
-	/*if (argc != 2)
+	if (argc != 2)
 
 	{
 		printf("Linha de comando inválida!!!");
 		return -1;
 	}
-	char * fileName = argv[1];*/
+	char * fileName = argv[1];
 
 	//--- processar ficheiro
 	gzFile = fopen(fileName, "r");
@@ -58,11 +58,11 @@ int main(int argc, char** argv)
 	fseek(gzFile, 0L, SEEK_SET);
 
 	//ler tamanho do ficheiro original (acrescentar: e definir Vector com símbolos
-	origFileSize = getOrigFileSize(gzFile);
+	origFileSize = getOrigFileSize();
 
 
 	//--- ler cabeçalho
-	int erro = getHeader(gzFile, &gzh);
+	int erro = getHeader(&gzh);
 	if (erro != 0)
 	{
 		printf ("Formato inválido!!!");
@@ -100,23 +100,28 @@ int main(int argc, char** argv)
 		//**************************************************
 		//****** ADICIONAR PROGRAMA... *********************
 		//**************************************************
+		int *CodeLen_HCLEN = new int[19];	//comprimentos de código
+
         char HLIT = readBlockFormat(n_HLIT);
         int dim_HLIT = HLIT + 257;
         printf("HLIT = %d\n", HLIT);
+
         char HDIST = readBlockFormat(n_HDIST);
         int dim_HDIST = HDIST + 1;
         printf("HDIST = %d\n", HDIST);
+
         char HCLEN = readBlockFormat(n_HCLEN);
         int dim_HCLEN = HCLEN + 4;
         printf("HCLEN = %d\n", HCLEN);
-        LenCode_HCLEN(dim_HCLEN);
-        ConverterHuffman(Huffman_tree); //devolve os códigos de huffman em string
+
+        LenCode_HCLEN(dim_HCLEN, CodeLen_HCLEN);
+        ConverterHuffman(Huffman_tree, CodeLen_HCLEN); //devolve os códigos de huffman em string
 
         int *CodeLen_HLIT = new int[dim_HLIT];
-        CodeLen_HLIT = LenCode_HLIT (dim_HLIT,Huffman_tree);
+        CodeLen_HLIT = LenCode(dim_HLIT,Huffman_tree);
 
         int *CodeLen_HDIST = new int[dim_HDIST];
-        CodeLen_HDIST = LenCode_HLIT (dim_HDIST,Huffman_tree);
+        CodeLen_HDIST = LenCode(dim_HDIST,Huffman_tree);
 
 		//actualizar número de blocos analisados
 		numBlocks++;
@@ -133,9 +138,6 @@ int main(int argc, char** argv)
 	bits2String(str, 0x03);
 	printf("%s\n", str);
 
-
-    //RETIRAR antes de criar o executável final
-    system("PAUSE");
     return EXIT_SUCCESS;
 }
 
@@ -176,58 +178,94 @@ char readBlockFormat(int type){
         readBits = 0x01;
         break;
     }
+
+    /*
+     * Verifica se tem bits suficientes para ler
+     * Caso não tenha vai buscar +1 byte (8bits) e adiciona aos que já tem
+     */
     if (availBits < needBits){
         fread(&byte, 1, 1, gzFile);
         rb = (byte << availBits) | rb;
         availBits += 8;
     }
 
+    // Manda para format o número de bits que quer
     format = rb & ((1 << needBits) - 1);
 
+    //Retira o número de bits lido
     rb = rb >> needBits;
 
     availBits -= needBits;
     return format;
 }
 
-/*1ª semana  - PONTO 2*/
-void LenCode_HCLEN(int dim){
-    int i,position;
-    for(i=0; i < dim; i++){
-        position = order_HCLEN[i];
-        CodeLen_HCLEN[position] = readBlockFormat(bit_lenCode);
+/*
+ * 1ª semana - PONTO 2
+ * 
+ * Lê os comprimentos dos códigos do alfabeto, com base em HCLEN
+ */
+void LenCode_HCLEN(int dim, int *CodeLen_HCLEN){
+	int ordem[19] = {16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};	//ordem pela qual se lê do ficheiro
+    int i;
+    for(i=0; i<dim; i++){
+        (CodeLen_HCLEN[ordem[i]]) = readBlockFormat(bit_lenCode);
     }
 }
 
-/*2ª semana - PONTO 3*/
-void ConverterHuffman(HuffmanTree* Huffman_tree){
+/*
+ * 2ª semana - PONTO 3
+ *
+ * 
+ */
+void ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN){
+	int codigosHuffman[19];
 	int x, max_bits=0, code = 0;
+
 	// determinar o comprimento máximo
 	for(x=0; x<19; x++){
-        if(CodeLen_HCLEN[x] > max_bits)
-			max_bits = CodeLen_HCLEN[x];
+        if((CodeLen_HCLEN[x]) > max_bits)
+			max_bits = (CodeLen_HCLEN[x]);
 	}
+
 	int ocorrencias[max_bits+1];
 	int next_code[max_bits+1];
-	int codigosHuffman[19];
 
+	//inicializar a 0
 	for(x=0; x<max_bits+1; x++)
 		ocorrencias[x] = 0;
 
+	//contagem de ocorrências do comprimento de códigos no alfabeto
 	for(x=0; x<19; x++){
 		ocorrencias[CodeLen_HCLEN[x]]++;
 	}
 
-	// quando o comprimento é 0 não se conta
+	// quando o comprimento é 0 não se conta devido à codificação do next_code
 	ocorrencias[0]=0;
 
-	for (int bits = 1; bits <= max_bits; bits++) {
+	/*
+	 * Código na documentação *alterado*
+	 * Determina a "base" da codificação de Huffman
+	 * 			Comprimento 		 Base
+	 * 				3				  000
+	 * 				4				 1100
+	 * 				5				11100
+	 *
+	 * Começa em 4 porque antes disso era tudo 0, apesar de com indice 3 já ter número 
+	 * de ocorrências, ele só usa o valor anterior. 
+	 */
+	for(int bits = 4; bits <= max_bits; bits++){
 		code = (code + ocorrencias[bits-1]) << 1;
 		next_code[bits] = code;
 	}
 
 	for(x=0; x<19; x++){
+		// Só insere se o comprimento for diferente de 0
 		if(ocorrencias[CodeLen_HCLEN[x]] != 0){
+			/*
+			 *  #################### CONTINUAR A COMENTAR AQUI ##############################
+			 * Utilizando a Base determinada anteriormente, vai codificar de acordo com os comprimentos
+			 * lidos de ficheiro
+			 */
 			codigosHuffman[x] = next_code[CodeLen_HCLEN[x]]++;
 			addNode(Huffman_tree,int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]),x,1);
 		}
@@ -247,7 +285,7 @@ int indexFromTree(HuffmanTree *Huffman_tree){
     return indice;
 }
 
-int* LenCode_HLIT (int dim, HuffmanTree *Huffman_tree){
+int* LenCode (int dim, HuffmanTree *Huffman_tree){
     int *lengths = new int[dim];
     for(int i = 0;i<dim;){
         int indice = indexFromTree(Huffman_tree);
@@ -284,7 +322,7 @@ int* LenCode_HLIT (int dim, HuffmanTree *Huffman_tree){
 
 //---------------------------------------------------------------
 //Lê o cabeçalho do ficheiro gzip: devolve erro (-1) se o formato for inválidodevolve, ou 0 se ok
-int getHeader(FILE *gzFile, gzipHeader *gzh) //obtém cabeçalho
+int getHeader(gzipHeader *gzh) //obtém cabeçalho
 {
 	unsigned char byte;
 
@@ -439,7 +477,7 @@ int isDynamicHuffman(unsigned char rb)
 
 //---------------------------------------------------------------
 //Obtém tamanho do ficheiro original
-long getOrigFileSize(FILE * gzFile)
+long getOrigFileSize()
 {
 	//salvaguarda posição actual do ficheiro
 	long fp = ftell(gzFile);
@@ -457,7 +495,6 @@ long getOrigFileSize(FILE * gzFile)
 		fread(&byte, 1, 1, gzFile);
 		sz = (byte << 8*(i+1)) + sz;
 	}
-
 
 	//restaura file pointer
 	fseek(gzFile, fp, SEEK_SET);
