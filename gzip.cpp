@@ -114,11 +114,9 @@ int main(int argc, char** argv)
 
         int *CodeLen_HLIT = new int[dim_HLIT];
         CodeLen_HLIT = LenCode_HLIT (dim_HLIT,Huffman_tree);
-        ConverterHuffman(Huffman_tree);
 
         int *CodeLen_HDIST = new int[dim_HDIST];
         CodeLen_HDIST = LenCode_HLIT (dim_HDIST,Huffman_tree);
-        ConverterHuffman(Huffman_tree);
 
 		//actualizar número de blocos analisados
 		numBlocks++;
@@ -211,7 +209,7 @@ void ConverterHuffman(HuffmanTree* Huffman_tree){
 	}
 	int ocorrencias[max_bits+1];
 	int next_code[max_bits+1];
-	int codigosHuffman[max_bits+1];
+	int codigosHuffman[19];
 
 	for(x=0; x<max_bits+1; x++)
 		ocorrencias[x] = 0;
@@ -250,7 +248,7 @@ int indexFromTree(HuffmanTree *Huffman_tree){
 }
 
 int* LenCode_HLIT (int dim, HuffmanTree *Huffman_tree){
-    int lengths[dim];
+    int *lengths = new int[dim];
     for(int i = 0;i<dim;){
         int indice = indexFromTree(Huffman_tree);
         int repeat = 0;
