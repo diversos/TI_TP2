@@ -36,20 +36,20 @@ int main(int argc, char** argv)
 	int numBlocks = 0;
 	gzipHeader gzh;
 	char needBits = 0;
-    //criar arvore
+    //criar árvore
     HuffmanTree* Huffman_tree = createHFTree();
 
 
 	//--- obter ficheiro a descompactar
-	//char fileName[] = "FAQ.txt.gz";
+	char fileName[] = "FAQ.txt.gz";
 
-	if (argc != 2)
+	/*if (argc != 2)
 
 	{
 		printf("Linha de comando inválida!!!");
 		return -1;
 	}
-	char * fileName = argv[1];
+	char * fileName = argv[1];*/
 
 	//--- processar ficheiro
 	gzFile = fopen(fileName, "r");
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 		//****** ADICIONAR PROGRAMA... *********************
 		//**************************************************
 		int *CodeLen_HCLEN = new int[19];	//comprimentos de código
-
+        /*1ª semana - PONTO 1*/
         char HLIT = readBlockFormat(n_HLIT);
         int dim_HLIT = HLIT + 257;
         printf("HLIT = %d\n", HLIT);
@@ -114,9 +114,13 @@ int main(int argc, char** argv)
         int dim_HCLEN = HCLEN + 4;
         printf("HCLEN = %d\n", HCLEN);
 
+        /*1ª semana - PONTO 2*/
         LenCode_HCLEN(dim_HCLEN, CodeLen_HCLEN);
-        ConverterHuffman(Huffman_tree, CodeLen_HCLEN); //devolve os códigos de huffman em string
 
+        /*2ª semana - PONTO 3*/
+        ConverterHuffman(Huffman_tree, CodeLen_HCLEN);
+
+        /*2ª semana - PONTO 4 e PONTO 5*/
         int *CodeLen_HLIT = new int[dim_HLIT];
         CodeLen_HLIT = LenCode(dim_HLIT,Huffman_tree);
 
@@ -203,15 +207,15 @@ char readBlockFormat(int type){
 
 /*
  * 1ª semana - PONTO 2
- * 
+ *
  * Lê os comprimentos dos códigos do alfabeto, com base em HCLEN
  */
 void LenCode_HCLEN(int dim, int *CodeLen_HCLEN){
 	int ordem[19] = {16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};	//ordem pela qual se lê do ficheiro
     int i;
+    //inicializar a 0
     for(i=0; i<19; i++)
     	CodeLen_HCLEN[i] = 0;
-
     for(i=0; i<dim; i++){
         CodeLen_HCLEN[ordem[i]] = readBlockFormat(bit_lenCode);
     }
@@ -220,7 +224,7 @@ void LenCode_HCLEN(int dim, int *CodeLen_HCLEN){
 /*
  * 2ª semana - PONTO 3
  *
- * 
+ * Converte para códigos huffman e adiciona à árvore
  */
 void ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN){
 	int codigosHuffman[19];
@@ -265,17 +269,18 @@ void ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN){
 		// Só insere se o comprimento for diferente de 0
 		if(ocorrencias[CodeLen_HCLEN[x]] != 0){
 			/*
-			 *  #################### CONTINUAR A COMENTAR AQUI ##############################
 			 * Utilizando a Base determinada anteriormente, vai codificar de acordo com os comprimentos
-			 * lidos de ficheiro
+			 * de código lidos do ficheiro
 			 */
 			codigosHuffman[x] = next_code[CodeLen_HCLEN[x]]++;
+			//adiciona os códigos de huffman obtidos à árvore
 			addNode(Huffman_tree,int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]),x,1);
 		}
 	}
 }
 
 /*2ª semana - PONTO 4 e PONTO 5*/
+//devolve o índice dada a árvore
 int indexFromTree(HuffmanTree *Huffman_tree){
     int isNotLeaf = -2;
     int indice = isNotLeaf;
@@ -288,6 +293,12 @@ int indexFromTree(HuffmanTree *Huffman_tree){
     return indice;
 }
 
+/*
+*Devolve um array contendo os comprimentos de código
+*referentes ao alfabeto literais/comprimentos dada a
+*dimensão do array e a árvore que armazena os comprimentos
+*de código
+*/
 int* LenCode (int dim, HuffmanTree *Huffman_tree){
     int *lengths = new int[dim];
     for(int i = 0;i<dim;){
@@ -520,6 +531,7 @@ void bits2String(char *strBits, unsigned char byte)
 	}
 }
 
+//Função que converte um número inteiro para binário
 char *int2Binary(int number, int LenCode){
     string out = "";
     int countbit = 0;
