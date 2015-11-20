@@ -1,5 +1,12 @@
 /* Author: Rui Pedro Paiva
-Teoria da Informação, LEI, 2007/2008*/
+Teoria da Informação, LEI, 2007/2008
+*
+*Adaptado por:
+*André Monteiro do Rosário Almeida, 2013152895
+*Mariana da Cruz Cunha, 2014214727
+*Sérgio José Marschall, 2014197357
+*
+*/
 
 #include <stdio.h>
 
@@ -35,6 +42,6 @@ void bits2String(char *strBits, unsigned char byte);
 char readBlockFormat(int type);
 int indexFromTree(HuffmanTree *Huffman_tree);
 void LenCode_HCLEN(int dim, int *CodeLen_HCLEN);
-void ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN);
+char** ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN, int dim);
 char *int2Binary(int number, int lenCode);
 int* LenCode(int dim, HuffmanTree *Huffman_tree);
