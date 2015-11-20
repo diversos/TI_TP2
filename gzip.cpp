@@ -1,5 +1,12 @@
 /*Author: Rui Pedro Paiva
-Teoria da Informação, LEI, 2007/2008*/
+Teoria da Informação, LEI, 2007/2008
+*
+*Adaptado por:
+*André Monteiro do Rosário Almeida, 2013152895
+*Mariana da Cruz Cunha, 2014214727
+*Sérgio José Marschall, 2014197357
+*
+*/
 
 #include <cstdlib>
 #include <unistd.h>
@@ -37,14 +44,15 @@ int main(int argc, char** argv)
 	gzipHeader gzh;
 	char needBits = 0;
     //criar árvore
-    HuffmanTree* Huffman_tree = createHFTree();
+    HuffmanTree* Huffman_tree_HCLEN = createHFTree();
+    HuffmanTree* Huffman_tree_HLIT = createHFTree();
+    HuffmanTree* Huffman_tree_HDIST = createHFTree();
 
 
 	//--- obter ficheiro a descompactar
 	char fileName[] = "FAQ.txt.gz";
 
 	/*if (argc != 2)
-
 	{
 		printf("Linha de comando inválida!!!");
 		return -1;
@@ -101,6 +109,10 @@ int main(int argc, char** argv)
 		//****** ADICIONAR PROGRAMA... *********************
 		//**************************************************
 		int *CodeLen_HCLEN = new int[19];	//comprimentos de código
+		//char* HuffmanCode_HCLEN;
+		//char* HuffmanCode_HLIT;
+		//char** HuffmanCode_HDIST;
+
         /*1ª semana - PONTO 1*/
         char HLIT = readBlockFormat(n_HLIT);
         int dim_HLIT = HLIT + 257;
@@ -118,14 +130,25 @@ int main(int argc, char** argv)
         LenCode_HCLEN(dim_HCLEN, CodeLen_HCLEN);
 
         /*2ª semana - PONTO 3*/
-        ConverterHuffman(Huffman_tree, CodeLen_HCLEN);
-
+        char** chara;
+        chara = ConverterHuffman(Huffman_tree_HCLEN, CodeLen_HCLEN, 19);
+printf("\nFIM\n");
         /*2ª semana - PONTO 4 e PONTO 5*/
         int *CodeLen_HLIT = new int[dim_HLIT];
-        CodeLen_HLIT = LenCode(dim_HLIT,Huffman_tree);
+        CodeLen_HLIT = LenCode(dim_HLIT,Huffman_tree_HCLEN);
 
         int *CodeLen_HDIST = new int[dim_HDIST];
-        CodeLen_HDIST = LenCode(dim_HDIST,Huffman_tree);
+        CodeLen_HDIST = LenCode(dim_HDIST,Huffman_tree_HCLEN);
+        //printf("teste!! %d", CodeLen_HDIST[0]);
+        /*3ª semana - PONTO 6*/
+        printf("\n\n");
+        //ConverterHuffman(Huffman_tree_HLIT,CodeLen_HLIT,dim_HLIT);
+
+        //ConverterHuffman(Huffman_tree_HDIST,CodeLen_HDIST,dim_HDIST);
+        printf("\nFIM\n");
+        /*for(int k=0;k<dim_HDIST;k++){
+        printf("\n***** %s",HuffmanCode_HDIST[k]);
+        }*/
 
 		//actualizar número de blocos analisados
 		numBlocks++;
@@ -147,7 +170,11 @@ int main(int argc, char** argv)
     return EXIT_SUCCESS;
 }
 
-/*1ª semana  - PONTO 1*/
+/*1ª semana  - PONTO 1
+*
+*Função que lê o formato do bloco
+*
+*/
 char readBlockFormat(int type){
     char format, needBits, readBits;
     switch (type){
@@ -195,10 +222,10 @@ char readBlockFormat(int type){
         availBits += 8;
     }
 
-    // Manda para format o número de bits que quer
+    // Guarda em format o número de bits que quer
     format = rb & ((1 << needBits) - 1);
 
-    //Retira o número de bits lido
+    //Descarta o número de bits lidos
     rb = rb >> needBits;
 
     availBits -= needBits;
@@ -224,28 +251,32 @@ void LenCode_HCLEN(int dim, int *CodeLen_HCLEN){
 /*
  * 2ª semana - PONTO 3
  *
- * Converte para códigos huffman e adiciona à árvore
+ * Converte para códigos huffman e adiciona-os à árvore
  */
-void ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN){
-	int codigosHuffman[19];
+char** ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN, int dim){
+	int codigosHuffman[dim];
+
 	int x, max_bits=0, code = 0;
 
 	// determinar o comprimento máximo
-	for(x=0; x<19; x++){
+	for(x=0; x<dim; x++){
+            //printf("\ntrololololo %d", CodeLen_HCLEN[x]);
         if((CodeLen_HCLEN[x]) > max_bits){
 			max_bits = CodeLen_HCLEN[x];
 		}
 	}
 
+    char* arrayHuffman[dim];
 	int ocorrencias[max_bits+1];
 	int next_code[max_bits+1];
+
 
 	//inicializar a 0
 	for(x=0; x<max_bits+1; x++)
 		ocorrencias[x] = 0;
 
 	//contagem de ocorrências do comprimento de códigos no alfabeto
-	for(x=0; x<19; x++){
+	for(x=0; x<dim; x++){
 		ocorrencias[CodeLen_HCLEN[x]]++;
 	}
 
@@ -264,8 +295,7 @@ void ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN){
 		code = (code + ocorrencias[bits-1]) << 1;
 		next_code[bits] = code;
 	}
-
-	for(x=0; x<19; x++){
+	for(x=0; x<dim; x++){
 		// Só insere se o comprimento for diferente de 0
 		if(ocorrencias[CodeLen_HCLEN[x]] != 0){
 			/*
@@ -274,9 +304,19 @@ void ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN){
 			 */
 			codigosHuffman[x] = next_code[CodeLen_HCLEN[x]]++;
 			//adiciona os códigos de huffman obtidos à árvore
+		//	printf("***%d\n", codigosHuffman[x]);
+			//printf("###%d\n", CodeLen_HCLEN[x]);
+			printf("\n%s\n", int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]));
 			addNode(Huffman_tree,int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]),x,1);
+
+			strcpy(arrayHuffman[x], int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]));
+            printf("\nwwwwwuuuuuuuuuuuttttttttttttttttttt\n");
 		}
 	}
+	//return arrayHuffman;
+	char** lol;
+	strcpy(lol[0], "a");
+	return lol;
 }
 
 /*2ª semana - PONTO 4 e PONTO 5*/
@@ -295,12 +335,13 @@ int indexFromTree(HuffmanTree *Huffman_tree){
 
 /*
 *Devolve um array contendo os comprimentos de código
-*referentes ao alfabeto literais/comprimentos dada a
+*referentes ao alfabeto de literais/comprimentos, dada a
 *dimensão do array e a árvore que armazena os comprimentos
 *de código
 */
 int* LenCode (int dim, HuffmanTree *Huffman_tree){
     int *lengths = new int[dim];
+    printf("\nlolitos %d", lengths[0]);
     for(int i = 0;i<dim;){
         int indice = indexFromTree(Huffman_tree);
         int repeat = 0;
@@ -330,6 +371,7 @@ int* LenCode (int dim, HuffmanTree *Huffman_tree){
             }
         }
     }
+    printf("\nlolitos2 %d", lengths[0]);
     return lengths;
 }
 
@@ -531,7 +573,10 @@ void bits2String(char *strBits, unsigned char byte)
 	}
 }
 
-//Função que converte um número inteiro para binário
+/*
+*Função que converte um número inteiro para binário
+*e devolve num array de char
+*/
 char *int2Binary(int number, int LenCode){
     string out = "";
     int countbit = 0;
