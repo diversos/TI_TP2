@@ -109,9 +109,9 @@ int main(int argc, char** argv)
 		//****** ADICIONAR PROGRAMA... *********************
 		//**************************************************
 		int *CodeLen_HCLEN = new int[19];	//comprimentos de código
-		//char* HuffmanCode_HCLEN;
-		//char* HuffmanCode_HLIT;
-		//char** HuffmanCode_HDIST;
+		char** HuffmanCode_HCLEN;
+		char** HuffmanCode_HLIT;
+		char** HuffmanCode_HDIST;
 
         /*1ª semana - PONTO 1*/
         char HLIT = readBlockFormat(n_HLIT);
@@ -130,8 +130,7 @@ int main(int argc, char** argv)
         LenCode_HCLEN(dim_HCLEN, CodeLen_HCLEN);
 
         /*2ª semana - PONTO 3*/
-        char** chara;
-        chara = ConverterHuffman(Huffman_tree_HCLEN, CodeLen_HCLEN, 19);
+        HuffmanCode_HCLEN = ConverterHuffman(Huffman_tree_HCLEN, CodeLen_HCLEN, 19);
 printf("\nFIM\n");
         /*2ª semana - PONTO 4 e PONTO 5*/
         int *CodeLen_HLIT = new int[dim_HLIT];
@@ -142,13 +141,13 @@ printf("\nFIM\n");
         //printf("teste!! %d", CodeLen_HDIST[0]);
         /*3ª semana - PONTO 6*/
         printf("\n\n");
-        //ConverterHuffman(Huffman_tree_HLIT,CodeLen_HLIT,dim_HLIT);
+        HuffmanCode_HLIT = ConverterHuffman(Huffman_tree_HLIT,CodeLen_HLIT,dim_HLIT);
+printf("\nFIM\n");
+        HuffmanCode_HDIST = ConverterHuffman(Huffman_tree_HDIST,CodeLen_HDIST,dim_HDIST);
 
-        //ConverterHuffman(Huffman_tree_HDIST,CodeLen_HDIST,dim_HDIST);
-        printf("\nFIM\n");
-        /*for(int k=0;k<dim_HDIST;k++){
+        for(int k=0;k<dim_HDIST;k++){
         printf("\n***** %s",HuffmanCode_HDIST[k]);
-        }*/
+        }
 
 		//actualizar número de blocos analisados
 		numBlocks++;
@@ -266,9 +265,17 @@ char** ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN, int dim){
 		}
 	}
 
-    char* arrayHuffman[dim];
+    char **arrayHuffman;
+    arrayHuffman = (char **)malloc(sizeof(char *)*dim);
+    int l;
+    for (l=0;l<dim;l++){
+        arrayHuffman[l] = (char *)malloc(sizeof(char)*100);
+    }
+
 	int ocorrencias[max_bits+1];
 	int next_code[max_bits+1];
+
+
 
 
 	//inicializar a 0
@@ -303,14 +310,9 @@ char** ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN, int dim){
 			 * de código lidos do ficheiro
 			 */
 			codigosHuffman[x] = next_code[CodeLen_HCLEN[x]]++;
-			//adiciona os códigos de huffman obtidos à árvore
-		//	printf("***%d\n", codigosHuffman[x]);
-			//printf("###%d\n", CodeLen_HCLEN[x]);
-			printf("\n%s\n", int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]));
 			addNode(Huffman_tree,int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]),x,1);
 
 			strcpy(arrayHuffman[x], int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]));
-            printf("\nwwwwwuuuuuuuuuuuttttttttttttttttttt\n");
 		}
 	}
 	return arrayHuffman;
