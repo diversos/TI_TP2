@@ -313,10 +313,7 @@ char** ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN, int dim){
             printf("\nwwwwwuuuuuuuuuuuttttttttttttttttttt\n");
 		}
 	}
-	//return arrayHuffman;
-	char** lol;
-	strcpy(lol[0], "a");
-	return lol;
+	return arrayHuffman;
 }
 
 /*2ª semana - PONTO 4 e PONTO 5*/
