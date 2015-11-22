@@ -26,6 +26,8 @@ Teoria da Informação, LEI, 2007/2008
 #define extra_17 6
 #define extra_18 7
 #define need_1 8
+#define extra_lit 9
+#define extra_dist 10
 
 using namespace std;
 
@@ -130,24 +132,22 @@ int main(int argc, char** argv)
         LenCode_HCLEN(dim_HCLEN, CodeLen_HCLEN);
 
         /*2ª semana - PONTO 3*/
+        printf("\nHuffman Tree - HCLEN:\n");
         HuffmanCode_HCLEN = ConverterHuffman(Huffman_tree_HCLEN, CodeLen_HCLEN, 19);
-printf("\nFIM\n");
+
         /*2ª semana - PONTO 4 e PONTO 5*/
         int *CodeLen_HLIT = new int[dim_HLIT];
         CodeLen_HLIT = LenCode(dim_HLIT,Huffman_tree_HCLEN);
 
         int *CodeLen_HDIST = new int[dim_HDIST];
         CodeLen_HDIST = LenCode(dim_HDIST,Huffman_tree_HCLEN);
-        //printf("teste!! %d", CodeLen_HDIST[0]);
-        /*3ª semana - PONTO 6*/
-        printf("\n\n");
-        HuffmanCode_HLIT = ConverterHuffman(Huffman_tree_HLIT,CodeLen_HLIT,dim_HLIT);
-printf("\nFIM\n");
-        HuffmanCode_HDIST = ConverterHuffman(Huffman_tree_HDIST,CodeLen_HDIST,dim_HDIST);
 
-        for(int k=0;k<dim_HDIST;k++){
-        printf("\n***** %s",HuffmanCode_HDIST[k]);
-        }
+        /*3ª semana - PONTO 6*/
+        printf("\nHuffman Tree - HLIT:\n");
+        HuffmanCode_HLIT = ConverterHuffman(Huffman_tree_HLIT,CodeLen_HLIT,dim_HLIT);
+        printf("\nHuffman Tree - HDIST:\n");
+        HuffmanCode_HDIST = ConverterHuffman(Huffman_tree_HDIST,CodeLen_HDIST,dim_HDIST);
+        descompactacao(Huffman_tree_HLIT, Huffman_tree_HDIST, gzh.fName);
 
 		//actualizar número de blocos analisados
 		numBlocks++;
@@ -174,6 +174,29 @@ printf("\nFIM\n");
 *Função que lê o formato do bloco
 *
 */
+
+char getBits(int needBits){
+    char format;
+    /*
+     * Verifica se tem bits suficientes para ler
+     * Caso não tenha vai buscar +1 byte (8bits) e adiciona aos que já tem
+     */
+    if (availBits < needBits){
+        fread(&byte, 1, 1, gzFile);
+        rb = (byte << availBits) | rb;
+        availBits += 8;
+    }
+
+    // Guarda em format o número de bits que quer
+    format = rb & ((1 << needBits) - 1);
+
+    //Descarta o número de bits lidos
+    rb = rb >> needBits;
+
+    availBits -= needBits;
+    return format;
+}
+
 char readBlockFormat(int type){
     char format, needBits, readBits;
     switch (type){
@@ -210,25 +233,7 @@ char readBlockFormat(int type){
         readBits = 0x01;
         break;
     }
-
-    /*
-     * Verifica se tem bits suficientes para ler
-     * Caso não tenha vai buscar +1 byte (8bits) e adiciona aos que já tem
-     */
-    if (availBits < needBits){
-        fread(&byte, 1, 1, gzFile);
-        rb = (byte << availBits) | rb;
-        availBits += 8;
-    }
-
-    // Guarda em format o número de bits que quer
-    format = rb & ((1 << needBits) - 1);
-
-    //Descarta o número de bits lidos
-    rb = rb >> needBits;
-
-    availBits -= needBits;
-    return format;
+    format = getBits(needBits);
 }
 
 /*
@@ -253,31 +258,22 @@ void LenCode_HCLEN(int dim, int *CodeLen_HCLEN){
  * Converte para códigos huffman e adiciona-os à árvore
  */
 char** ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN, int dim){
+	int l, x, max_bits=0, code = 0;
 	int codigosHuffman[dim];
-
-	int x, max_bits=0, code = 0;
+    char **arrayHuffman = (char **)malloc(sizeof(char *)*dim);
+    for (l=0;l<dim;l++){
+        arrayHuffman[l] = (char *)malloc(sizeof(char)*max_bits);
+    }
 
 	// determinar o comprimento máximo
 	for(x=0; x<dim; x++){
-            //printf("\ntrololololo %d", CodeLen_HCLEN[x]);
         if((CodeLen_HCLEN[x]) > max_bits){
 			max_bits = CodeLen_HCLEN[x];
 		}
 	}
 
-    char **arrayHuffman;
-    arrayHuffman = (char **)malloc(sizeof(char *)*dim);
-    int l;
-    for (l=0;l<dim;l++){
-        arrayHuffman[l] = (char *)malloc(sizeof(char)*100);
-    }
-
 	int ocorrencias[max_bits+1];
 	int next_code[max_bits+1];
-
-
-
-
 	//inicializar a 0
 	for(x=0; x<max_bits+1; x++)
 		ocorrencias[x] = 0;
@@ -311,7 +307,6 @@ char** ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN, int dim){
 			 */
 			codigosHuffman[x] = next_code[CodeLen_HCLEN[x]]++;
 			addNode(Huffman_tree,int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]),x,1);
-
 			strcpy(arrayHuffman[x], int2Binary(codigosHuffman[x],CodeLen_HCLEN[x]));
 		}
 	}
@@ -340,12 +335,13 @@ int indexFromTree(HuffmanTree *Huffman_tree){
 */
 int* LenCode (int dim, HuffmanTree *Huffman_tree){
     int *lengths = new int[dim];
-    printf("\nlolitos %d", lengths[0]);
     for(int i = 0;i<dim;){
         int indice = indexFromTree(Huffman_tree);
         int repeat = 0;
-        if (indice <= 15)
-            lengths[i++] = indice;
+        if (indice <= 15){
+            lengths[i] = indice;
+            i++;
+        }
         else{
             switch(indice){
             case 16:
@@ -358,22 +354,66 @@ int* LenCode (int dim, HuffmanTree *Huffman_tree){
             case 17:
                 repeat = readBlockFormat(extra_17) + 3;
                 for (int x = 0; x<repeat;x++){
-                    lengths[i++] = 0;
+                    lengths[i] = 0;
+                    i++;
                 }
                 break;
             case 18:
                 repeat = readBlockFormat(extra_18) + 11;
                 for (int x = 0; x < repeat;x++){
-                    lengths[i++] = 0;
+                    lengths[i] = 0;
+                    i++;
                 }
                 break;
             }
         }
     }
-    printf("\nlolitos2 %d", lengths[0]);
     return lengths;
 }
 
+/*3ª semana - PONTO 7*/
+void descompactacao(HuffmanTree *Huffman_treeLIT, HuffmanTree *Huffman_treeDIST, char *nome){
+    int needBits = 0, position = 0,indice = 0;
+    int extraLengthBits[30][2] = {{0,3},{0,4},{0,5},{0,6},{0,7},{0,8},{0,9},{0,10},{1,11},{1,13},{1,15},{1,17},{2,19},{2,23},{2,27},{2,31},{3,35},{3,43},{3,51},{3,59},{4,67},{4,83},{4,99},{4,115},{5,131},{5,163},{5,195},{5,227},{0,258}};
+    int extraDistBits[30][2] = {{0,1},{0,2},{0,3},{0,4},{1,5},{1,7},{2,9},{2,13},{3,17},{3,25},{4,33},{4,49},{5,65},{5,97},{6,129},{6,193},{7,257},{7,385},{8,513},{8,769},{9,1025},{9,1537},{10,2049},{10,3073},{11,4097},{11,6145},{12,8193},{12,12289},{13,16385},{13,24577}};
+    int *outputStream;
+    FILE *outputFile = fopen(nome,"w");
+
+    while((indice = indexFromTree(Huffman_treeLIT))!=256){
+        //printf("\n***antes %d",indice);
+        if(indice<256){
+            outputStream[position] = indice;
+            position++;
+        }
+        else{
+            indice -= 257;
+          //  printf("\n***depois %d",indice);
+            int lengths = extraLengthBits[indice][1];
+            //printf("\n### %d",lengths);
+            needBits = extraLengthBits[indice][0];
+            //printf("\n###oi %d",needBits);
+            if(needBits>0)
+                lengths += getBits(needBits);
+                //    printf("\n###controlo2 %d",needBits);
+            indice = indexFromTree(Huffman_treeDIST);
+            int distancef = extraDistBits[indice][1];
+            needBits = extraDistBits[indice][0];
+
+            if(needBits>0)
+                distancef += getBits(needBits);
+
+            int startPosition = position - distancef;
+
+            for (int i = 0; i<lengths; i++){
+                outputStream[position] = outputStream[startPosition + i];
+                fprintf(outputFile,"%d\n",outputStream[position]);
+                position++;
+            }
+        }
+        //printf("\ni: %d pos: %d CHEGA AQUI6\n",indice, position);
+    }
+    fclose(outputFile);
+}
 
 //---------------------------------------------------------------
 //Lê o cabeçalho do ficheiro gzip: devolve erro (-1) se o formato for inválidodevolve, ou 0 se ok
