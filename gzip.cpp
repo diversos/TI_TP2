@@ -147,6 +147,7 @@ int main(int argc, char** argv)
         HuffmanCode_HLIT = ConverterHuffman(Huffman_tree_HLIT,CodeLen_HLIT,dim_HLIT);
         printf("\nHuffman Tree - HDIST:\n");
         HuffmanCode_HDIST = ConverterHuffman(Huffman_tree_HDIST,CodeLen_HDIST,dim_HDIST);
+
         descompactacao(Huffman_tree_HLIT, Huffman_tree_HDIST, gzh.fName);
 
 		//actualizar número de blocos analisados
@@ -198,42 +199,35 @@ char getBits(int needBits){
 }
 
 char readBlockFormat(int type){
-    char format, needBits, readBits;
+    char format, needBits;
     switch (type){
     case n_HLIT:
         needBits = 5;
-        readBits = 0x1F;
         break;
     case n_HDIST:
         needBits = 5;
-        readBits = 0x1F;
         break;
     case n_HCLEN:
         needBits = 4;
-        readBits = 0x0F;
         break;
     case bit_lenCode:
         needBits = 3;
-        readBits = 0x07;
         break;
     case extra_16:
         needBits = 2;
-        readBits = 0x03;
         break;
     case extra_17:
         needBits = 3;
-        readBits = 0x07;
         break;
     case extra_18:
         needBits = 7;
-        readBits = 0x7F;
         break;
     case need_1:
         needBits = 1;
-        readBits = 0x01;
         break;
     }
     format = getBits(needBits);
+    return format;
 }
 
 /*
@@ -376,26 +370,27 @@ void descompactacao(HuffmanTree *Huffman_treeLIT, HuffmanTree *Huffman_treeDIST,
     int needBits = 0, position = 0,indice = 0;
     int extraLengthBits[30][2] = {{0,3},{0,4},{0,5},{0,6},{0,7},{0,8},{0,9},{0,10},{1,11},{1,13},{1,15},{1,17},{2,19},{2,23},{2,27},{2,31},{3,35},{3,43},{3,51},{3,59},{4,67},{4,83},{4,99},{4,115},{5,131},{5,163},{5,195},{5,227},{0,258}};
     int extraDistBits[30][2] = {{0,1},{0,2},{0,3},{0,4},{1,5},{1,7},{2,9},{2,13},{3,17},{3,25},{4,33},{4,49},{5,65},{5,97},{6,129},{6,193},{7,257},{7,385},{8,513},{8,769},{9,1025},{9,1537},{10,2049},{10,3073},{11,4097},{11,6145},{12,8193},{12,12289},{13,16385},{13,24577}};
-    int *outputStream;
+    int outputStream[gzFile->_bufsiz];
     FILE *outputFile = fopen(nome,"w");
-
     while((indice = indexFromTree(Huffman_treeLIT))!=256){
-        //printf("\n***antes %d",indice);
+        //printf("\n***antes %d ---- %d",indice,position);
         if(indice<256){
             outputStream[position] = indice;
+            fprintf(outputFile,"%c",(char)outputStream[position]);
             position++;
         }
         else{
             indice -= 257;
-          //  printf("\n***depois %d",indice);
+            //printf("\n***antes %d",indice);
             int lengths = extraLengthBits[indice][1];
             //printf("\n### %d",lengths);
             needBits = extraLengthBits[indice][0];
-            //printf("\n###oi %d",needBits);
+            //printf("\n###oi %d",lengths);
             if(needBits>0)
                 lengths += getBits(needBits);
-                //    printf("\n###controlo2 %d",needBits);
+
             indice = indexFromTree(Huffman_treeDIST);
+            printf("\n***antes %d",indice);
             int distancef = extraDistBits[indice][1];
             needBits = extraDistBits[indice][0];
 
@@ -406,7 +401,7 @@ void descompactacao(HuffmanTree *Huffman_treeLIT, HuffmanTree *Huffman_treeDIST,
 
             for (int i = 0; i<lengths; i++){
                 outputStream[position] = outputStream[startPosition + i];
-                fprintf(outputFile,"%d\n",outputStream[position]);
+                fprintf(outputFile,"%c",(char)outputStream[position]);
                 position++;
             }
         }
