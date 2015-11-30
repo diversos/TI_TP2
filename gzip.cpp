@@ -269,7 +269,7 @@ char** ConverterHuffman(HuffmanTree* Huffman_tree, int *CodeLen_HCLEN, int dim){
 		ocorrencias[CodeLen_HCLEN[x]]++;
 	}
 
-	// quando o comprimento é 0 não se conta devido à codificação do next_code
+	// quando o comprimento é 0 não se conta devido à codificação do next_code, logo é 0
 	ocorrencias[0]=0;
 
 	/*
@@ -406,7 +406,7 @@ void descompactacao(HuffmanTree *Huffman_treeLIT, HuffmanTree *Huffman_treeDIST,
             /*A posição onde vai começar vai ser a posição atual menos a distância lida, isto é
             recua a distância lida*/
             int recua = position - distancef;
-            //Vai guardar até se atingir o respetivo comprimento de código
+            //Vai guardar até se atingir o comprimento de código
             for (int i = 0; i<lengths; i++){
                 outputStream[position] = outputStream[recua + i];
                 //Imprime no ficheiro
