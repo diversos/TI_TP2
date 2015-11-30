@@ -150,6 +150,7 @@ int main(int argc, char** argv)
         printf("\nHuffman Tree - HDIST:\n");
         HuffmanCode_HDIST = ConverterHuffman(Huffman_tree_HDIST,CodeLen_HDIST,dim_HDIST);
 
+        /*3ª semana - PONTO 7 e 4ª semana - PONTO 8*/
         descompactacao(Huffman_tree_HLIT, Huffman_tree_HDIST, gzh.fName);
 
 		//actualizar número de blocos analisados
@@ -175,7 +176,6 @@ int getBits(int needBits){
      * Verifica se tem bits suficientes para ler
      * Caso não tenha vai buscar +1 byte (8bits) e adiciona aos que já tem
      */
-
     while (availBits < needBits){
         fread(&byte, 1, 1, gzFile);
         rb = (byte << availBits) | rb;
@@ -185,7 +185,6 @@ int getBits(int needBits){
     format = rb & ((1 << needBits) - 1);
     //Descarta o número de bits lidos
     rb = rb >> needBits;
-
     availBits -= needBits;
     return format;
 }
@@ -359,9 +358,9 @@ int* LenCode (int dim, HuffmanTree *Huffman_tree){
     return lengths;
 }
 
-/*3ª semana - PONTO 7 e PONTO 8
+/*3ª semana - PONTO 7 e 4ª semana - PONTO 8
 *
-*Função de descompactação com base nos códigos de Huffman obtidos na alínea anterior e com o algoritmo LZ77
+*Função de descompactação com base nos códigos de Huffman obtidos e com o algoritmo LZ77
 *Gravação destes dados no ficheiro com o nome original
 *
 */
@@ -369,7 +368,7 @@ void descompactacao(HuffmanTree *Huffman_treeLIT, HuffmanTree *Huffman_treeDIST,
     int needBits = 0, position = 0,indice = 0;
     int extraLengthBits[30][2] = {{0,3},{0,4},{0,5},{0,6},{0,7},{0,8},{0,9},{0,10},{1,11},{1,13},{1,15},{1,17},{2,19},{2,23},{2,27},{2,31},{3,35},{3,43},{3,51},{3,59},{4,67},{4,83},{4,99},{4,115},{5,131},{5,163},{5,195},{5,227},{0,258}};
     int extraDistBits[30][2] = {{0,1},{0,2},{0,3},{0,4},{1,5},{1,7},{2,9},{2,13},{3,17},{3,25},{4,33},{4,49},{5,65},{5,97},{6,129},{6,193},{7,257},{7,385},{8,513},{8,769},{9,1025},{9,1537},{10,2049},{10,3073},{11,4097},{11,6145},{12,8193},{12,12289},{13,16385},{13,24577}};
-    int outputStream[32768];
+    int outputStream[getOrigFileSize()];
     FILE *outputFile = fopen(nome,"w");
     while(1){
         //Lê o índice da árvore de literais/comprimentos
@@ -387,7 +386,7 @@ void descompactacao(HuffmanTree *Huffman_treeLIT, HuffmanTree *Huffman_treeDIST,
             if (indice == 256){
                 break;
             }
-            //Subtrai-se 257 para se poder procurar o índice no array com os bits e correspondente comprimento ou distância
+            //Subtrai-se 257 para se procurar o índice no array com os bits e correspondente comprimento
             indice -= 257;
             //Guarda o comprimento de código associado ao índice
             int lengths = extraLengthBits[indice][1];
