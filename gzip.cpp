@@ -10,14 +10,13 @@ Teoria da Informação, LEI, 2007/2008
 
 #include <cstdlib>
 #include <unistd.h>
-#include "huffman.h"
 #include <sstream>
-
 #include <cstring>
 
+#include "huffman.h"
 #include "gzip.h"
 
-//Para o switch
+//Defines para o switch
 #define n_HLIT 1
 #define n_HDIST 2
 #define n_HCLEN 3
@@ -162,23 +161,14 @@ int main(int argc, char** argv)
 	fclose(gzFile);
 	printf("End: %d bloco(s) analisado(s).\n", numBlocks);
 
-
-    //teste da função bits2String: RETIRAR antes de criar o executável final
-	char str[9];
-	bits2String(str, 0x03);
-	printf("%s\n", str);
-
-	//RETIRAR antes de criar o executável final
-	system("PAUSE");
     return EXIT_SUCCESS;
 }
 
 /*1ª semana  - PONTO 1
 *
-*Função que lê o formato do bloco
+*Função que lê o formato do bloco e devolve os bits lidos
 *
 */
-
 int getBits(int needBits){
      int format;
     /*
@@ -200,6 +190,7 @@ int getBits(int needBits){
     return format;
 }
 
+//Informação dos needBits
 int readBlockFormat(int type){
     int format, needBits;
     switch (type){
@@ -368,7 +359,12 @@ int* LenCode (int dim, HuffmanTree *Huffman_tree){
     return lengths;
 }
 
-/*3ª semana - PONTO 7*/
+/*3ª semana - PONTO 7 e PONTO 8
+*
+*Função de descompactação com base nos códigos de Huffman obtidos na alínea anterior e com o algoritmo LZ77
+*Gravação destes dados no ficheiro com o nome original
+*
+*/
 void descompactacao(HuffmanTree *Huffman_treeLIT, HuffmanTree *Huffman_treeDIST, char *nome){
     int needBits = 0, position = 0,indice = 0;
     int extraLengthBits[30][2] = {{0,3},{0,4},{0,5},{0,6},{0,7},{0,8},{0,9},{0,10},{1,11},{1,13},{1,15},{1,17},{2,19},{2,23},{2,27},{2,31},{3,35},{3,43},{3,51},{3,59},{4,67},{4,83},{4,99},{4,115},{5,131},{5,163},{5,195},{5,227},{0,258}};
@@ -376,29 +372,45 @@ void descompactacao(HuffmanTree *Huffman_treeLIT, HuffmanTree *Huffman_treeDIST,
     int outputStream[32768];
     FILE *outputFile = fopen(nome,"w");
     while(1){
+        //Lê o índice da árvore de literais/comprimentos
         indice = indexFromTree(Huffman_treeLIT);
+        //Se o índice for inferiror a 256 então esse valor é guardado no outputStream
         if(indice<256){
             outputStream[position] = indice;
+            //Imprime no ficheiro
             fprintf(outputFile,"%c",(char)(outputStream[position]));
             position++;
         }
+        //Se o índice for >= 256
         else{
+            //Se for o índice 256 é o fim de bloco, por isso termina
             if (indice == 256){
                 break;
             }
+            //Subtrai-se 257 para se poder procurar o índice no array com os bits e correspondente comprimento ou distância
             indice -= 257;
+            //Guarda o comprimento de código associado ao índice
             int lengths = extraLengthBits[indice][1];
+            //Guarda o número de bits que necessita ler
             needBits = extraLengthBits[indice][0];
+            //Se o número de bits que necessita é superior a zero vai ler esse valor ao bloco
             if(needBits>0)
                 lengths += getBits(needBits);
+            //Lê o índice da árvore de distâncias
             indice = indexFromTree(Huffman_treeDIST);
+            //Guarda a distância associada ao índice
             int distancef = extraDistBits[indice][1];
+            //Guarda o número de bits que necessita ler
             needBits = extraDistBits[indice][0];
             if(needBits>0)
                 distancef += getBits(needBits);
-            int startPosition = position - distancef;
+            /*A posição onde vai começar vai ser a posição atual menos a distância lida, isto é
+            recua a distância lida*/
+            int recua = position - distancef;
+            //Vai guardar até se atingir o respetivo comprimento de código
             for (int i = 0; i<lengths; i++){
-                outputStream[position] = outputStream[startPosition + i];
+                outputStream[position] = outputStream[recua + i];
+                //Imprime no ficheiro
                 fprintf(outputFile,"%c",(char)(outputStream[position]));
                 position++;
             }
